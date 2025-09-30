@@ -78,7 +78,7 @@
 
 ### 1. Cloner le repository
 ```bash
-git clone Ultra2000/pharmapp
+git clone https://github.com/Ultra2000/pharmapp
 cd pharmapp
 ```
 
