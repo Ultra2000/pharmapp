@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\SupplierResource\Pages;
+use App\Filament\Resources\SupplierResource\RelationManagers;
+use App\Models\Supplier;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+
+class SupplierResource extends Resource
+{
+    protected static ?string $model = Supplier::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
+    
+    protected static ?string $navigationGroup = 'Gestion de stock';
+    
+    protected static ?int $navigationSort = 2;
+    
+    protected static ?string $modelLabel = 'Fournisseur';
+    
+    protected static ?string $pluralModelLabel = 'Fournisseurs';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\TextInput::make('name')
+                    ->label('Nom')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('contact_name')
+                    ->label('Nom du contact')
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('phone')
+                    ->label('Téléphone')
+                    ->tel()
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\TextInput::make('email')
+                    ->label('Email')
+                    ->email()
+                    ->required()
+                    ->maxLength(255),
+                Forms\Components\Textarea::make('address')
+                    ->label('Adresse')
+                    ->required()
+                    ->maxLength(65535)
+                    ->columnSpanFull(),
+            ])
+            ->columns(2);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Nom')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('contact_name')
+                    ->label('Nom du contact')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('phone')
+                    ->label('Téléphone')
+                    ->searchable()
+                    ->copyable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->copyable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('address')
+                    ->label('Adresse')
+                    ->searchable()
+                    ->limit(50)
+                    ->tooltip(function (Tables\Columns\TextColumn $column): string {
+                        return $column->getRecord()->address;
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                //
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ProductsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListSuppliers::route('/'),
+            'create' => Pages\CreateSupplier::route('/create'),
+            'edit' => Pages\EditSupplier::route('/{record}/edit'),
+        ];
+    }
+}

@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources
+                                        Forms\Components\TextInput::make('barcode')
+                                            ->label('Code-barres')
+                                            ->placeholder('Scanner ou saisir le code-barres')
+                                            ->columnSpan(3)
+                                            ->suffixAction(Filament\Resources\SaleResource\Pages;
+use App\Filament\Resources\SaleResource\RelationManagers;
+use App\Models\Sale;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Actions\Action;
+use Filament\Forms\Components\Actions;
+use Illuminate\Support\Facades\Auth;
+
+class SaleResource extends Resource
+{
+    protected static ?string $model = Sale::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+
+    protected static ?string $modelLabel = 'Vente';
+    
+    protected static ?string $pluralModelLabel = 'Ventes';
+    
+    protected static ?string $navigationGroup = 'Ventes';
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Produits')
+                    ->description('Ajoutez les produits à la vente')
+                    ->columnSpan(2)
+                    ->schema([
+                        Forms\Components\Hidden::make('user_id')
+                            ->default(fn () => Auth::id()),
+
+                        Forms\Components\Repeater::make('items')
+                            ->relationship()
+                            ->schema([
+                                Forms\Components\Grid::make()
+                                    ->schema([
+                                Forms\Components\TextInput::make('barcode')
+                                    ->label('Code-barres')
+                                    ->placeholder('Scanner ou saisir le code-barres')
+                                    ->suffixAction(
+                                        Action::make('searchProduct')
+                                            ->icon('heroicon-m-magnifying-glass')
+                                            ->action(function ($set, $get) {
+                                                $barcode = $get('barcode');
+                                                $product = \App\Models\Product::where('barcode', $barcode)->first();
+                                                
+                                                if ($product) {
+                                                    $set('product_id', $product->id);
+                                                    $set('unit_price', $product->sale_price);
+                                                }
+                                            })
+                                    ),
+                                
+                                Forms\Components\Select::make('product_id')
+                                    ->relationship('product', 'name')
+                                    ->required()
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpan(4)
+                                    ->label('Produit')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        if ($state) {
+                                            $product = \App\Models\Product::find($state);
+                                            $set('unit_price', $product?->sale_price);
+                                        }
+                                    }),
+                                
+                                Forms\Components\TextInput::make('quantity')
+                                    ->required()
+                                    ->numeric()
+                                    ->default(1)
+                                    ->minValue(1)
+                                    ->reactive()
+                                    ->label('Quantité')
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $unitPrice = $get('unit_price');
+                                        if ($state && $unitPrice) {
+                                            $set('total_price', $state * $unitPrice);
+                                        }
+                                    }),
+                                
+                                Forms\Components\TextInput::make('unit_price')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('€')
+                                    ->readOnly()
+                                    ->label('Prix unitaire'),
+                                
+                                Forms\Components\TextInput::make('total_price')
+                                    ->required()
+                                    ->numeric()
+                                    ->prefix('€')
+                                    ->readOnly()
+                                    ->label('Total'),
+                            ])->columns(12),
+                    ])
+                    ->columns(1)
+                    ->defaultItems(1)
+                    ->addActionLabel('Ajouter un produit')
+                    ->label('Produits')
+                    ->reactive()
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        $total = collect($state)->sum('total_price');
+                        $set('total_amount', $total);
+                    }),
+                    
+                    ])
+                ]),
+
+                Forms\Components\Section::make('Informations complémentaires')
+                    ->columnSpan(1)
+                    ->schema([
+                        Forms\Components\TextInput::make('total_amount')
+                            ->required()
+                            ->numeric()
+                            ->prefix('€')
+                            ->readOnly()
+                            ->label('Montant total'),
+
+                        Forms\Components\DateTimePicker::make('date')
+                            ->required()
+                            ->default(now()),
+                            
+                        Forms\Components\FileUpload::make('prescription_file')
+                            ->label('Ordonnance')
+                            ->image()
+                            ->directory('prescriptions')
+                            ->preserveFilenames()
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['application/pdf', 'image/*'])
+                    ])
+            ])
+            ->columns(3);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('date')
+                    ->dateTime()
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('items_count')
+                    ->counts('items')
+                    ->label('Nombre de produits'),
+                
+                Tables\Columns\TextColumn::make('total_amount')
+                    ->label('Montant total')
+                    ->money('eur')
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Vendeur')
+                    ->sortable(),
+                    
+                Tables\Columns\ImageColumn::make('prescription_file')
+                    ->label('Ordonnance'),
+            ])
+            ->filters([
+                //
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('download_invoice')
+                    ->label('Facture')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->url(fn (Sale $record) => route('generate.invoice', ['sale' => $record]))
+                    ->openUrlInNewTab(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListSales::route('/'),
+            'create' => Pages\CreateSale::route('/create'),
+            'edit' => Pages\EditSale::route('/{record}/edit'),
+        ];
+    }
+}

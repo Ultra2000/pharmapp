@@ -1,0 +1,79 @@
+@import '../../vendor/filament/filament/resources/css/theme.css';
+
+/* Personnalisation des boutons */
+.fi-btn {
+    transition: all 0.3s ease;
+}
+
+.fi-btn.fi-btn-color-primary {
+    background-color: #009E60;
+}
+
+.fi-btn.fi-btn-color-primary:hover {
+    background-color: #007A4B;
+}
+
+/* En-tête et navigation */
+.fi-sidebar {
+    background-color: #f5f5f5;
+}
+
+.fi-sidebar-item {
+    transition: all 0.2s ease;
+}
+
+.fi-sidebar-item:hover {
+    background-color: #e6e6e6;
+}
+
+.fi-active-sidebar-item {
+    background-color: #009E60 !important;
+    color: white !important;
+}
+
+/* Cards et conteneurs */
+.fi-card {
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* Tables */
+.fi-ta-header-cell {
+    background-color: #f5f5f5;
+}
+
+/* Forms */
+.fi-input {
+    border-radius: 0.5rem;
+}
+
+.fi-input:focus {
+    border-color: #009E60;
+    box-shadow: 0 0 0 2px rgba(0, 158, 96, 0.2);
+}
+
+/* Badges et statuts */
+.fi-badge.fi-badge-success {
+    background-color: #009E60;
+}
+
+/* Logo et marque */
+.fi-logo {
+    color: #009E60;
+}
+
+/* Améliorations d'accessibilité */
+::selection {
+    background-color: #009E60;
+    color: white;
+}
+
+/* Animations douces */
+.fi-modal {
+    transition: all 0.3s ease;
+}
+
+/* States de hover/focus améliorés */
+.fi-link:hover {
+    color: #007A4B;
+}
